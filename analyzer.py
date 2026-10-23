@@ -12,5 +12,5 @@ with open ("auth.log") as f:
                         failed_counts[ip] = failed_counts[ip] + 1
                     else: 
                         failed_counts[ip] = 1
-print(failed_counts)           
+print(failed_counts)          
                 
