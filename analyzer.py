@@ -10,7 +10,7 @@ with open ("auth.log") as f:
                     ip = words[index]
                     if ip in failed_counts:
                         failed_counts[ip] = failed_counts[ip] + 1
-                    else:
+                    else: 
                         failed_counts[ip] = 1
 print(failed_counts)           
                 
