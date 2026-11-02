@@ -63,6 +63,11 @@ def analyze_log(file_path):
                         )
 
                 elif "Accepted password" in line:
+                    timestamp = extract_timestamp(line)
+
+                    if timestamp is None:
+                        continue 
+
                     cutoff = timestamp - timedelta(minutes=5)
 
                     recent_failures = [
@@ -74,6 +79,8 @@ def analyze_log(file_path):
                         alerts.append(
                             ("SUCCESS AFTER FAILURES", ip, len(recent_failures))
                         )
+                    failed_times[ip] = []
+                    detected_ips.discard(ip)
 
     except FileNotFoundError:
         print(f"Error: File not found {file_path}")
