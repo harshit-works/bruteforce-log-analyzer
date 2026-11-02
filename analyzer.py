@@ -22,48 +22,64 @@ def extract_timestamp(line):
           return None   
 
 def analyze_log(file_path):
-     failed_counts = {}
-     alerts = []
-     failed_times = {}
-     try:
-          with open (file_path) as f:
-               for line in f:
-                    ip = extract_ip(line)
-                    if ip is None:
-                         continue 
-                    if "Failed password" in line:
-                         failed_counts[ip] = failed_counts.get(ip, 0)+1
+    failed_counts = {}
+    alerts = []
+    failed_times = {}
+    detected_ips = set()
 
-                         timestamp = extract_timestamp(line)
-                         if timestamp is None:
-                              continue
-                         if ip not in failed_times:
-                              failed_times[ip] = []
-                         failed_times[ip].append(timestamp)
+    try:
+        with open(file_path) as f:
+            for line in f:
+                ip = extract_ip(line)
 
-                         cutoff = timestamp - timedelta(minutes=5)
-                         failed_times[ip] = [
-                              t for t in failed_times[ip] if t >= cutoff
-                         ]
-                         if len(failed_times[ip]) >= THRESHOLD:
-                              print(f"BRUTE FORCE DETECTED: {ip}")
+                if ip is None:
+                    continue
 
-                    elif "Accepted password" in line:
-                         count = failed_counts.get(ip, 0)
-                         timestamp = extract_timestamp(line)
-                         if timestamp is None:
-                              continue 
-                         cutoff = timestamp - timedelta(minutes=5)
-                         recent_failures = [
-                              t for t in failed_times.get(ip,[])
-                              if t >= cutoff
-                         ]
-                         if len(recent_failures) >= THRESHOLD:
-                              alerts.append((ip, len(recent_failures)))
-     except FileNotFoundError:
-          print(f"Error: File not found {file_path}")
-          return None
-     return failed_counts, alerts
+                if "Failed password" in line:
+                    failed_counts[ip] = failed_counts.get(ip, 0) + 1
+
+                    timestamp = extract_timestamp(line)
+                    if timestamp is None:
+                        continue
+
+                    if ip not in failed_times:
+                        failed_times[ip] = []
+
+                    failed_times[ip].append(timestamp)
+
+                    cutoff = timestamp - timedelta(minutes=5)
+
+                    failed_times[ip] = [
+                        t for t in failed_times[ip] if t >= cutoff
+                    ]
+
+                    if (
+                        len(failed_times[ip]) >= THRESHOLD
+                        and ip not in detected_ips
+                    ):
+                        detected_ips.add(ip)
+                        alerts.append(
+                            ("BRUTE FORCE", ip, len(failed_times[ip]))
+                        )
+
+                elif "Accepted password" in line:
+                    cutoff = timestamp - timedelta(minutes=5)
+
+                    recent_failures = [
+                        t for t in failed_times.get(ip, [])
+                        if t >= cutoff
+                    ]
+
+                    if len(recent_failures) >= THRESHOLD:
+                        alerts.append(
+                            ("SUCCESS AFTER FAILURES", ip, len(recent_failures))
+                        )
+
+    except FileNotFoundError:
+        print(f"Error: File not found {file_path}")
+        return None
+
+    return failed_counts, alerts
 
 def print_report(failed_counts, alerts):
      sorted_ips = sorted(
@@ -71,14 +87,17 @@ def print_report(failed_counts, alerts):
           key=lambda item: item[1],
           reverse=True
      )
+     print("\n========== TOTAL FAILED LOGINS ==========")
      for ip, count in sorted_ips:
-          if count >= THRESHOLD:
-               print(f"FLAGGED: {ip} -> {count} failures")
-          else:
-            print(f"NORMAL: {ip} -> {count} failures")
+          print(f"{ip} -> {count} failures")
 
-     for ip, count in alerts:
-          print(f"ALERT: {ip} had {count} failures before success")
+          print("\n========== SECURITY ALERTS ==========")
+
+     if not alerts:
+          print("No suspicious activity detected.")
+     else:
+          for alert_type, ip, count in alerts:
+               print(f"{alert_type}: {ip} -> {count} failures")
 
 def main():
      parser = argparse.ArgumentParser(
@@ -94,4 +113,7 @@ def main():
 
 if __name__ == "__main__":
      main()
+
+
+
  
