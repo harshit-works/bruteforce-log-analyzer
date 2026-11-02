@@ -1,72 +1,119 @@
-# Brute-Force Log Analyzer
+# Python SSH Authentication Log Analyzer
 
-A Python script that reads an SSH-style authentication log and flags IP
-addresses that look like brute-force attempts.
+A Python-based security log analysis tool that monitors SSH authentication logs, identifies suspicious login activity, and detects potential brute-force attacks using a rolling five-minute detection window.
 
-## What it does
-- Reads a log file line by line
-- Finds failed login attempts
-- Counts failures per IP address
-- detects "many failures, then a success" from the same IP, brute force
+## Features
 
-## Usage
-Use to detect multiple login attempts on a system and FLAG that ip and create a alert
+- Extracts source IP addresses from SSH authentication logs.
+- Counts failed login attempts per IP address.
+- Detects brute-force attempts (5 or more failures within 5 minutes).
+- Identifies successful logins following repeated failed attempts.
+- Prevents duplicate brute-force alerts during the same detection cycle.
+- Handles missing files and invalid timestamps.
+- Generates a structured security report.
+- Supports command-line execution using `argparse`.
 
-## Sample output
-FLAGGED: 192.0.2.20 -> 5 failures
-ALERT: 192.0.2.44 had 4 failures before success
-ALERT: 198.51.100.23 had 1 failures before success
+## Technologies Used
 
-## How to Run
-
-### Requirements
 - Python 3
-- A sample SSH authentication log file
+- File Handling
+- Dictionaries and Sets
+- Datetime and Timedelta
+- Argparse
+- Pytest
 
-### Run the Analyzer
+## Project Structure
 
-1. Clone or download this repository.
-2. Open a terminal in the project directory.
-3. Run:
-
-```bash
-python analyzer.py
+```text
+log-analyzer/
+├── analyzer.py
+├── sample_auth.log
+├── test_analyzer.py
+└── README.md
 ```
 
-The analyzer reads `sample_auth.log` and generates a report of failed login attempts.
+## How It Works
 
-## Detection Logic
+1. Reads SSH authentication log entries.
+2. Extracts IP addresses and timestamps.
+3. Tracks failed login attempts for each IP.
+4. Maintains a rolling five-minute window.
+5. Generates alerts when suspicious authentication patterns are detected.
+6. Displays total failed logins and security alerts.
 
-The tool:
-- Extracts source IP addresses from SSH-style authentication log entries.
-- Counts failed password attempts for each IP.
-- Flags IP addresses that reach the configured failure threshold.
-- Detects a failure-then-success pattern.
-- Sorts the report by the number of failed attempts.
+## Detection Rules
 
-## Testing and Results
+| Detection | Condition |
+|---|---|
+| Brute-force attempt | 5 or more failed logins within 5 minutes |
+| Success after failures | Successful login after 5 or more failures within 5 minutes |
 
-Test the analyzer using synthetic authentication logs containing:
-- An IP with repeated failed logins followed by a successful login.
-- An IP with repeated failures but no subsequent success.
-- A normal successful login.
+## Installation and Usage
 
-**Test results:** Add your actual results after running the tests. Do not claim detection accuracy or false-positive rates without measuring them.
+Clone the repository:
+
+```bash
+git clone YOUR_GITHUB_REPOSITORY_URL
+```
+
+Navigate to the project directory:
+
+```bash
+cd log-analyzer
+```
+
+Run the analyzer:
+
+```bash
+python analyzer.py sample_auth.log
+```
+
+View command-line help:
+
+```bash
+python analyzer.py --help
+```
+
+## Run Tests
+
+Install pytest:
+
+```bash
+pip install pytest
+```
+
+Run the automated tests:
+
+```bash
+pytest -v
+```
+
+## Testing
+
+The test suite covers:
+
+- IP address extraction.
+- Invalid or missing IP addresses.
+- Brute-force detection within five minutes.
+- Failed attempts outside the detection window.
+- Successful login after repeated failures.
+- Failed attempts without a successful login.
+- Multiple attack cycles from the same IP.
 
 ## Limitations
 
-- The current threshold counts failures across the entire log file rather than within a defined time window.
-- The tool analyzes SSH-style log entries and is not a complete intrusion detection system.
-- Detection results depend on the format and quality of the input logs.
+- Designed for sample SSH authentication logs and learning purposes.
+- Assumes log entries are chronologically ordered.
+- Uses timestamps without year information.
+- Not intended as a production SIEM or real-time monitoring solution.
 
 ## Future Improvements
 
-- Add command-line arguments for selecting a log file.
-- Add automated tests with pytest.
-- Evaluate detection performance using larger synthetic log datasets.
-- Improve detection logic and reporting.
+- Support additional authentication log formats.
+- Add structured JSON reporting.
+- Integrate with a SIEM platform.
+- Improve detection and incident investigation capabilities.
 
+## Disclaimer
 
-## Limitations
-- Works on one log format only
-- The log is fake sample data, not from a real system
+This project is developed for educational and defensive cybersecurity purposes.
